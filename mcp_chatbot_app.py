@@ -2,11 +2,14 @@ import asyncio
 import json
 import logging
 import os
+import traceback
 from typing import Dict, List, Any
 import streamlit as st
-import requests
 from dotenv import load_dotenv
 from openai import OpenAI
+
+import prompt_utils
+from mcp_util import MCPHttpServer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,102 +40,6 @@ class Configuration:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         return self.api_key
-
-
-class MCPHttpServer:
-    """Manages HTTP-based MCP server connections and tool execution."""
-
-    def __init__(self, name: str, config: Dict[str, Any]) -> None:
-        self.name: str = name
-        self.config: Dict[str, Any] = config
-        self.base_url: str = config.get('url', '')
-        self.tools: List[Dict[str, Any]] = []
-
-    async def initialize(self) -> None:
-        """Initialize the HTTP server connection by fetching available tools."""
-        try:
-            # JSON-RPC 2.0 request for tools/list
-            response = requests.post(
-                self.base_url,
-                json={
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "tools/list",
-                    "params": {}
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                timeout=10
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Extract tools from JSON-RPC response
-            if 'result' in data and 'tools' in data['result']:
-                self.tools = data['result']['tools']
-                logging.info(f"Server {self.name} initialized with {len(self.tools)} tools")
-            else:
-                logging.warning(f"No tools found in server {self.name}")
-
-        except Exception as e:
-            logging.error(f"Error initializing server {self.name}: {e}")
-            raise
-
-    def list_tools(self) -> List[Dict[str, Any]]:
-        """List available tools from the server."""
-        return self.tools
-
-    async def execute_tool(
-            self,
-            tool_name: str,
-            arguments: Dict[str, Any],
-            retries: int = 2,
-            delay: float = 1.0
-    ) -> Any:
-        """Execute a tool with retry mechanism."""
-        attempt = 0
-        while attempt < retries:
-            try:
-                logging.info(f"Executing {tool_name}...")
-                # JSON-RPC 2.0 request for tools/call
-                response = requests.post(
-                    self.base_url,
-                    json={
-                        "jsonrpc": "2.0",
-                        "id": 2,
-                        "method": "tools/call",
-                        "params": {
-                            "name": tool_name,
-                            "arguments": arguments
-                        }
-                    },
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    timeout=30
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                # Extract result from JSON-RPC response
-                if 'result' in data:
-                    return data['result']
-                elif 'error' in data:
-                    raise Exception(f"Tool execution error: {data['error']}")
-                return data
-
-            except Exception as e:
-                attempt += 1
-                logging.warning(f"Error executing tool: {e}. Attempt {attempt} of {retries}.")
-                if attempt < retries:
-                    logging.info(f"Retrying in {delay} seconds...")
-                    await asyncio.sleep(delay)
-                else:
-                    logging.error("Max retries reached. Failing.")
-                    raise
 
 
 class LLMClient:
@@ -167,7 +74,9 @@ class ChatSession:
         self.llm_client: LLMClient = llm_client
         self.system_message: str = ""
 
-    def format_tool_for_llm(self, tool: Dict[str, Any]) -> str:
+
+    @staticmethod
+    def format_tool_for_llm(tool: Dict[str, Any]) -> str:
         """Format tool information for LLM."""
         args_desc = []
         if 'inputSchema' in tool and 'properties' in tool['inputSchema']:
@@ -177,12 +86,7 @@ class ChatSession:
                     arg_desc += " (required)"
                 args_desc.append(arg_desc)
 
-        return f"""
-Tool: {tool['name']}
-Description: {tool.get('description', 'No description')}
-Arguments:
-{chr(10).join(args_desc) if args_desc else 'No arguments'}
-"""
+        return prompt_utils.get_tool_format_message(tool, args_desc)
 
     async def initialize(self) -> bool:
         """Initialize all servers and prepare system message."""
@@ -204,29 +108,9 @@ Arguments:
             logging.warning("No tools available from any server")
             return False
 
-        tools_description = "\n".join([self.format_tool_for_llm(tool) for tool in all_tools])
+        tools_description = "\n".join([str(self.format_tool_for_llm(tool)) for tool in all_tools])
 
-        self.system_message = f"""You are a helpful assistant with access to these tools:
-
-{tools_description}
-Choose the appropriate tool based on the user's question. If no tool is needed, reply directly.
-
-IMPORTANT: When you need to use a tool, you must ONLY respond with the exact JSON object format below, nothing else:
-{{
-    "tool": "tool-name",
-    "arguments": {{
-        "argument-name": "value"
-    }}
-}}
-
-After receiving a tool's response:
-1. Transform the raw data into a natural, conversational response
-2. Keep responses concise but informative
-3. Focus on the most relevant information
-4. Use appropriate context from the user's question
-5. Avoid simply repeating the raw data
-
-Please use only the tools that are explicitly defined above."""
+        self.system_message = prompt_utils.get_system_prompt(tools_description)
 
         return True
 
@@ -327,7 +211,7 @@ def main():
 
             except Exception as e:
                 st.error(f"❌ Error initializing chatbot: {e}")
-                logging.error(f"Initialization error: {e}")
+                logging.error(f"Initialization error: {traceback.print_exc()}")
                 return
 
     # Sidebar with info
