@@ -1,8 +1,8 @@
 # MCP Chatbot
 
-This chatbot example demonstrates how to integrate the Model Context Protocol (MCP) into a simple CLI chatbot. The implementation showcases MCP's flexibility by supporting multiple tools through MCP servers and is compatible with any LLM provider that follows OpenAI API standards.
+This chatbot example demonstrates how to integrate the Model Context Protocol (MCP) into a simple streamlit UI application. The implementation showcases MCP's flexibility by supporting multiple tools through MCP servers and is compatible with any LLM provider that follows OpenAI API standards.
 
-If you find this project helpful, don’t forget to ⭐ star the [repository](https://github.com/3choff/mcp-chatbot) or buy me a ☕ [coffee](https://ko-fi.com/3choff).
+If you find this project helpful, don’t forget to ⭐ star the [repository](https://github.com/solawd/mcp-chatbot) or buy me a ☕ [coffee](https://github.com/solawd).
 
 ## Key Features
 
@@ -12,18 +12,20 @@ If you find this project helpful, don’t forget to ⭐ star the [repository](ht
 
 ## Requirements
 
-- Python 3.10
+- Python 3.12
 - `python-dotenv`
 - `requests`
 - `mcp`
 - `uvicorn`
+- `streamlit`
+- `openai`
 
 ## Installation
 
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/3choff/mcp-chatbot.git
+   git clone https://github.com/solawd/mcp-chatbot.git
    cd mcp-chatbot
    ```
 
@@ -38,7 +40,7 @@ If you find this project helpful, don’t forget to ⭐ star the [repository](ht
    Create a `.env` file in the root directory and add your API key:
 
    ```plaintext
-   LLM_API_KEY=your_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
 
 4. **Configure servers:**
@@ -79,19 +81,16 @@ If you find this project helpful, don’t forget to ⭐ star the [repository](ht
 
 ## Usage
 
-1. **Run the client:**
+1. **Run the streamlit app:**
 
    ```bash
-   python main.py
+   streamlit run mcp_chatbot_app.py
    ```
 
 2. **Interact with the assistant:**
    
    The assistant will automatically detect available tools and can respond to queries based on the tools provided by the configured servers.
 
-3. **Exit the session:**
-
-   Type `quit` or `exit` to end the session.
 
 ## Architecture
 
@@ -99,12 +98,13 @@ If you find this project helpful, don’t forget to ⭐ star the [repository](ht
 - **System Prompt**: Tools are dynamically included in the system prompt, allowing the LLM to understand available capabilities.
 - **Server Integration**: Supports any MCP-compatible server, tested with various server implementations including Uvicorn and Node.js.
 
-### Class Structure
-- **Configuration**: Manages environment variables and server configurations
-- **Server**: Handles MCP server initialization, tool discovery, and execution
-- **Tool**: Represents individual tools with their properties and formatting
-- **LLMClient**: Manages communication with the LLM provider
-- **ChatSession**: Orchestrates the interaction between user, LLM, and tools
+### Code Structure
+- **mcp_util**: Handles MCP server initialization, tool discovery, and execution
+- **prompt_utils**: Contains functions for formatting system prompts
+- **mcp_chatbot_app**: Provides the streamlit app interface for user interaction
+  - **Configuration**: Manages environment variables and server configurations
+  - **ChatSession**: Orchestrates the interaction between user, LLM, and tools
+  - **LLMClient**: Handles communication with the LLM provider
 
 ### Logic Flow
 
@@ -152,7 +152,7 @@ flowchart TD
 
 ## Contributing
 
-Feedback and contributions are welcome. If you encounter any issues or have suggestions for improvements, please create a new [issue](https://github.com/3choff/mcp-chatbot/issues) on the GitHub repository.
+Feedback and contributions are welcome. If you encounter any issues or have suggestions for improvements, please create a new [issue](https://github.com/solawd/mcp-chatbot/issues) on the GitHub repository.
 
 If you'd like to contribute to the development of the project, feel free to submit a pull request with your changes.
 
