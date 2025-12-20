@@ -1,8 +1,13 @@
 # MCP Chatbot
 
-This chatbot example demonstrates how to integrate the Model Context Protocol (MCP) into a simple streamlit UI application. The implementation showcases MCP's flexibility by supporting multiple tools through MCP servers and is compatible with any LLM provider that follows OpenAI API standards.
+This chatbot example demonstrates how to integrate the Model Context Protocol (MCP) into a Chatbot with a simple streamlit UI application. 
+This system builds on the original code [3choff](https://github.com/3choff/mcp-chatbot) as follows:
+- refactoring and moving the server initialization to a separate file
+- refactoring and moving prompts into a separate module
+- adding a simple streamlit UI for user interaction
+- displaying the tool descriptions in the UI
 
-If you find this project helpful, don’t forget to ⭐ star the [repository](https://github.com/solawd/mcp-chatbot) or buy me a ☕ [coffee](https://github.com/solawd).
+If you find this project helpful, don’t forget to ⭐ star the [repository](https://github.com/solawd/mcp-chatbot).
 
 ## Key Features
 
@@ -86,6 +91,7 @@ If you find this project helpful, don’t forget to ⭐ star the [repository](ht
    ```bash
    streamlit run mcp_chatbot_app.py
    ```
+   The app will start at `http://localhost:8501`. You should see a simple UI as shown below: ![Chatbot Screenshot](images/Screensho-chatbot.png)
 
 2. **Interact with the assistant:**
    
