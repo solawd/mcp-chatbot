@@ -4,8 +4,6 @@ import logging
 import traceback
 from typing import Dict, List, Any
 import streamlit as st
-from openai import OpenAI
-
 import prompt_utils
 from bot_config import LLMClient, Configuration
 from mcp_util import MCPHttpServer

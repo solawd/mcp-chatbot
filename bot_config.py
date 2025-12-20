@@ -2,7 +2,6 @@ import json
 import logging
 import os
 from typing import Dict, Any, List
-
 from dotenv import load_dotenv
 from openai import OpenAI
 
